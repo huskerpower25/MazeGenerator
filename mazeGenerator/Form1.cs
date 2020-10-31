@@ -143,7 +143,6 @@ namespace mazeGenerator
         {
             solveGeneticAlgorithm();
         }
-
         private void btnSolveAllPaths_Click(object sender, EventArgs e)
         {
             solveAllPaths();
@@ -613,7 +612,6 @@ namespace mazeGenerator
         }
         #endregion
 
-
         #region Genetic Algorithm
         private void solveGeneticAlgorithm()
         {
@@ -648,6 +646,9 @@ namespace mazeGenerator
             int wallsHit = 0;
             int distToEnd = rows + cols;
 
+            // gh test
+
+
             // calc walls hit
             //for (int i = 0; i < totalMoves; i++)
             //{
@@ -667,6 +668,7 @@ namespace mazeGenerator
                         
             return fitness;
         }
+
         #endregion
     }
 
