@@ -55,6 +55,12 @@ namespace mazeGenerator
         SolidBrush startBrush = new SolidBrush(Color.Green);
         SolidBrush endBrush = new SolidBrush(Color.Red);
         SolidBrush pathBrush = new SolidBrush(Color.DarkOliveGreen);
+        SolidBrush path1Brush = new SolidBrush(Color.Orange);
+        SolidBrush path2Brush = new SolidBrush(Color.Red);
+        SolidBrush path3Brush = new SolidBrush(Color.Black);
+        SolidBrush path4Brush = new SolidBrush(Color.Blue);
+        SolidBrush path5Brush = new SolidBrush(Color.Pink);
+
 
         Pen gridPen = new Pen(Color.Black, 2);
         Pen borderPen = new Pen(Color.Black, 4);
@@ -86,6 +92,22 @@ namespace mazeGenerator
                     if (grid[i, j].partOfFirstPath)
                     {
                         mazeGraphics.FillRectangle(pathBrush, grid[i, j].rectLoc);
+                    }
+                    if (grid[i, j].partOfSecondPath)
+                    {
+                        mazeGraphics.FillRectangle(path1Brush, grid[i, j].rectLoc);
+                    }
+                    if (grid[i, j].partOfThirdPath)
+                    {
+                        mazeGraphics.FillRectangle(path2Brush, grid[i, j].rectLoc);
+                    }
+                    if (grid[i, j].partOfFourthPath)
+                    {
+                        mazeGraphics.FillRectangle(path3Brush, grid[i, j].rectLoc);
+                    }
+                    if (grid[i, j].partOfFifthPath)
+                    {
+                        mazeGraphics.FillRectangle(path3Brush, grid[i, j].rectLoc);
                     }
                 }
             }
@@ -454,6 +476,10 @@ namespace mazeGenerator
             mazeComplete = true;
             updateBitmap();
         }
+        double map(double x, double in_min, double in_max, double out_min, double out_max)
+        {
+            return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
         #endregion
 
         #region Finding All Paths
@@ -620,33 +646,264 @@ namespace mazeGenerator
                 instantSolve();
             }
 
+            int populationSize = 10;
+            int totalMoves = 250;
+            int genCount = 5;
+            double mutateChance = 0.2;
 
-            int n = 10;
-            int totalMoves = 150;
+            List<Population> p = new List<Population>();
+            List<Population> maxFitList = new List<Population>();
 
-            Population[] p = new Population[n];
 
             // initialize population
-            for (int i = 0; i < n; i++)
+            for (int i = 0; i < populationSize; i++)
             {
-                p[i] = new Population();
-                p[i].init(totalMoves);
+                p.Add(new Population());
+                p.ElementAt(i).init(totalMoves);
             }
 
-            // calculate fitness for population
-            for (int i = 0; i < n; i++)
+
+            for (int ct = 0; ct < genCount; ct++)
             {
-                p[i].fitness = calcFitness_AllMovesPossible(p[i], totalMoves);
+                // calculate fitness for population
+                double minFitness = double.PositiveInfinity;
+                double maxFitness = 0;
+                int maxFitnessIndex = 0;
+                for (int i = 0; i < populationSize; i++)
+                {
+                    p[i].fitness = calcFitness_AllMovesPossible(p[i], totalMoves);
+                    if (p[i].fitness > maxFitness)
+                    {
+                        maxFitness = p[i].fitness;
+                        maxFitnessIndex = i;
+                    }
+                    if (p[i].fitness < minFitness)
+                    {
+                        minFitness = p[i].fitness;
+                    }
+                }
+                maxFitList.Add(p[maxFitnessIndex]);
+                // normalize fitness
+                for (int i = 0; i < populationSize; i++)
+                {
+                    p[i].fitness = map(p[i].fitness, minFitness, maxFitness, 0, 1);
+                    Console.WriteLine(p[i].fitness);
+                }
+
+
+                List<Population> matingPool = new List<Population>();
+                // add population to mating pool
+                for (int i = 0; i < populationSize; i++)
+                {
+                    double toAdd = p[i].fitness * 1000;
+                    for (int j = 0; j < (int)toAdd; j++)
+                    {
+                        matingPool.Add(p[i]);
+                    }
+                }
+
+                // clear current population
+                p.Clear();
+
+                // pull from mating pool
+                for (int i = 0; i < populationSize; i++)
+                {
+                    Population parent1 = new Population();
+                    Population parent2 = new Population();
+                    Population child = new Population();
+
+                    int[] startPos = { startX, startY };
+
+                    parent1 = matingPool.ElementAt(rand.Next(0, matingPool.Count - 1));
+                    parent2 = matingPool.ElementAt(rand.Next(0, matingPool.Count - 1));
+                    child.path.Add(startPos);
+
+                    for (int j = 1; j < totalMoves; j++)
+                    {
+                        // need movement and location
+
+                        Pathway.movement movement = new Pathway.movement();
+                        int[] location = new int[2];
+
+                        double whichParent = rand.NextDouble();
+                        if (whichParent < (1 - mutateChance) / 2)
+                        {
+                            location = moveCells_GA(child.path[j-1], parent1.move[j]);
+                            movement = parent1.move[j];
+
+                        }
+                        else if (whichParent > (1 - mutateChance) / 2 && whichParent < 1 - mutateChance)
+                        {
+                            location = moveCells_GA(child.path[j-1], parent2.move[j]);
+                            movement = parent2.move[j];
+                        }
+                        else
+                        {
+                            var t = child.moveToNextCell_AllMovesPossible(child.path.Last());
+
+                            child.path.Add(t.Item1);
+                            child.move.Add(t.Item2);
+                        }
+
+                        child.path.Add(location);
+                        child.move.Add(movement);
+
+                    }
+                    Console.WriteLine($"{parent1.fitness},{parent1.fitness}");
+                    p.Add(child);
+                }
+
+
+
+
+                // check randomness?
+                for (int i = 0; i < populationSize; i++)
+                {
+                    int x = 0, y = 0;
+                    for (int j = 0; j < totalMoves; j++)
+                    {
+                        x = x + p[i].path[j][0];
+                        y = y + p[i].path[j][1];
+                    }
+                    Console.WriteLine(x + y);
+                }
+
+                // update bitmap
+                switch (ct)
+                {
+                    case 0:
+                        foreach (var item in maxFitList)
+                        {
+                            for (int i = 0; i < item.path.Count(); i++)
+                            {
+                                grid[item.path[i][0], item.path[i][1]].partOfFirstPath = true;
+                            }
+                        }
+                        break;
+                    case 1:
+                        foreach (var item in maxFitList)
+                        {
+                            for (int i = 0; i < item.path.Count(); i++)
+                            {
+                                grid[item.path[i][0], item.path[i][1]].partOfSecondPath = true;
+                            }
+                        }
+                        break;
+                    case 2:
+                        foreach (var item in maxFitList)
+                        {
+                            for (int i = 0; i < item.path.Count(); i++)
+                            {
+                                grid[item.path[i][0], item.path[i][1]].partOfSecondPath = true;
+                            }
+                        }
+                        break;
+                    case 3:
+                        foreach (var item in maxFitList)
+                        {
+                            for (int i = 0; i < item.path.Count(); i++)
+                            {
+                                grid[item.path[i][0], item.path[i][1]].partOfThirdPath = true;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            updateBitmap();
+        }
+        private int[] moveCells_GA(int[] cell, Pathway.movement move)
+        {
+            switch (move)
+            {
+                case Pathway.movement.empty:
+                    break;
+                case Pathway.movement.left:
+                    cell[0]--;
+                    break;
+                case Pathway.movement.right:
+                    cell[0]++;
+                    break;
+                case Pathway.movement.up:
+                    cell[1]--;
+                    break;
+                case Pathway.movement.down:
+                    cell[1]++;
+                    break;
+                case Pathway.movement.stay:
+                    break;
+                default:
+                    break;
             }
 
+            return cell;
+        }
+        private int[] mutate(Population child)
+        {
+            List<Pathway.movement> availableMoves = new List<Pathway.movement>();
+
+            int[] newLoc = new int[2];
+            newLoc = child.path.Last();
+
+            if (newLoc[0] != 0)
+            {
+                availableMoves.Add(Pathway.movement.left);
+            }
+            if (newLoc[0] != cols)
+            {
+                availableMoves.Add(Pathway.movement.right);
+            }
+            if (newLoc[1] != 0)
+            {
+                availableMoves.Add(Pathway.movement.up);
+            }
+            if (newLoc[1] != rows)
+            {
+                availableMoves.Add(Pathway.movement.down);
+            }
+
+            int move = rand.Next(0, availableMoves.Count() - 1);
+
+            Pathway.movement movement = availableMoves[move];
+
+            switch (movement)
+            {
+                case Pathway.movement.empty:
+                    break;
+                case Pathway.movement.left:
+                    newLoc[0]--;
+                    break;
+                case Pathway.movement.right:
+                    newLoc[0]++;
+                    break;
+                case Pathway.movement.up:
+                    newLoc[1]--;
+                    break;
+                case Pathway.movement.down:
+                    newLoc[1]++;
+                    break;
+                case Pathway.movement.stay:
+                    break;
+                default:
+                    break;
+            }
+
+            return newLoc;
+        }
+        private List<Population> runGeneration(List<Population> p, int populationSize, int totalMoves)
+        {
+
+
+
+
+            return p;
         }
         public double calcFitness_AllMovesPossible(Population p, int totalMoves)
         {
             double fitness = 0;
             int wallsHit = 0;
             int distToEnd = rows + cols;
-
-            // gh test
 
 
             // calc walls hit
@@ -664,11 +921,12 @@ namespace mazeGenerator
 
             i = p.path.Last()[0];
             j = p.path.Last()[1];
-            distToEnd = (cols - i) + rows - j;
-                        
+            distToEnd = (cols - i) + (rows - j);
+
+            fitness = 1d / distToEnd;
+            
             return fitness;
         }
-
         #endregion
     }
 
@@ -700,6 +958,10 @@ namespace mazeGenerator
 
         public bool partOfPath = false;
         public bool partOfFirstPath = false;
+        public bool partOfSecondPath = false;
+        public bool partOfThirdPath = false;
+        public bool partOfFourthPath = false;
+        public bool partOfFifthPath = false;
 
 
         public enum pos
@@ -816,6 +1078,8 @@ namespace mazeGenerator
     public class Population
     {
         public List<int[]> path = new List<int[]>();
+        public List<Pathway.movement> move = new List<Pathway.movement>();
+
         int[] currentCell = new int[2];
 
         public double fitness = 0;
@@ -842,10 +1106,12 @@ namespace mazeGenerator
 
 
             for (int i = 0; i < size; i++)
-            { 
+            {
+                var tuple = moveToNextCell_AllMovesPossible(currentCell);
+                currentCell = tuple.Item1;
                 path.Add(currentCell);
-
-                currentCell = moveToNextCell_AllMovesPossible(currentCell);
+                move.Add(tuple.Item2);
+                                
 
                 if (currentCell[0] == Form1.endX && currentCell[i] == Form1.endY)
                 {
@@ -854,12 +1120,17 @@ namespace mazeGenerator
             }
         }
         
-        private int[] moveToNextCell_AllMovesPossible(int[] currentCell)
+        // give a cell, move to the next based on previous
+
+        public Tuple<int[], Pathway.movement> moveToNextCell_AllMovesPossible(int[] currentCell) // currentCell, Pathway.movement movement)
         {
+            int[] newCell = new int[2];
+
             int i = currentCell[0];
             int j = currentCell[1];
             bool possibleMove = false;
             next nextCell = new next();
+            Pathway.movement toMove = new Pathway.movement();
 
             while (!possibleMove)
             {
@@ -870,22 +1141,26 @@ namespace mazeGenerator
                     case next.empty:
                         break;
                     case next.left:
+                        toMove = Pathway.movement.left;
                         i--;
                         break;
                     case next.right:
+                        toMove = Pathway.movement.right;
                         i++;
                         break;
                     case next.up:
+                        toMove = Pathway.movement.up;
                         j--;
                         break;
                     case next.down:
+                        toMove = Pathway.movement.down;
                         j++;
                         break;
                     default:
                         break;
                 }
 
-                if (i >= 0 && i <= Form1.cols-1 && j >= 0 && j <= Form1.rows - 1)
+                if (i >= 0 && i <= Form1.cols - 1 && j >= 0 && j <= Form1.rows - 1)
                 {
                     possibleMove = true;
                 }
@@ -895,17 +1170,14 @@ namespace mazeGenerator
                     j = currentCell[1];
                 }
             }
-            int[] newCell = new int[2];
-            newCell[0] = i;
-            newCell[1] = j;
-
-            Console.WriteLine(nextCell.ToString());
-            Console.WriteLine($"({i}, {j})\n");
-
-            return newCell;
+            int[] newPos = new int[2];
+            newPos[0] = i;
+            newPos[1] = j;
+            var tuple = Tuple.Create(newPos, toMove);
+            return tuple;
         }
+            
 
-        
 
     }
 }

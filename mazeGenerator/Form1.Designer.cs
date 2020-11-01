@@ -41,7 +41,7 @@
             // 
             // tmrEngine
             // 
-            this.tmrEngine.Interval = 500;
+            this.tmrEngine.Interval = 25;
             this.tmrEngine.Tick += new System.EventHandler(this.tmrEngine_Tick);
             // 
             // btnClose
