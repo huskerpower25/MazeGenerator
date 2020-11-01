@@ -632,7 +632,7 @@ namespace mazeGenerator
 
             int populationSize = 20;
             int totalMoves = 350;
-            int genCount = 5;
+            int genCount = 50;
             double mutateChance = 0.2;
 
             List<Population> p = new List<Population>();
@@ -788,58 +788,61 @@ namespace mazeGenerator
 
 
                 // update bitmap
-                switch (ct)
-                {
-                    case 0:
-                            for (int i = 1; i < maxFitList[ct].path.Count()-1; i++)
-                            {
-                                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfFirstPath = true;
-                                updateBitmap();
-                             //   Thread.Sleep(5);
-                            }
-                        
-                        break;
-                    case 1:
-                            for (int i = 1; i < maxFitList[ct].path.Count() - 1; i++)
-                            {
-                                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfSecondPath = true;
-                                updateBitmap();
-                             //   Thread.Sleep(5);
-                            }
-                        
-                        break;
-                    case 2:
-                            for (int i = 1; i < maxFitList[ct].path.Count()-1; i++)
-                            {
-                                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfThirdPath = true;
-                                updateBitmap();
-                            //    Thread.Sleep(5);
-                            }
-                        
-                        break;
-                    case 3:
-                            for (int i = 1; i < maxFitList[ct].path.Count()-1; i++)
-                            {
-                                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfFourthPath = true;
-                                updateBitmap();
-                             //   Thread.Sleep(5);
-                            }                        
-                        break;
-                    case 4:
-                        for (int i = 1; i < maxFitList[ct].path.Count() - 1; i++)
-                        {
-                            grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfFifthPath = true;
-                            updateBitmap();
-                            Thread.Sleep(5);
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                //switch (ct)
+                //{
+                //    case 0:
+                //            for (int i = 1; i < maxFitList[ct].path.Count()-1; i++)
+                //            {
+                //                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfFirstPath = true;
+                //              //  updateBitmap();
+                //            }
+
+                //        break;
+                //    case 1:
+                //            for (int i = 1; i < maxFitList[ct].path.Count() - 1; i++)
+                //            {
+                //                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfSecondPath = true;
+                //              //  updateBitmap();
+                //            }
+
+                //        break;
+                //    case 2:
+                //            for (int i = 1; i < maxFitList[ct].path.Count()-1; i++)
+                //            {
+                //                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfThirdPath = true;
+                //               // updateBitmap();
+                //            }
+
+                //        break;
+                //    case 3:
+                //            for (int i = 1; i < maxFitList[ct].path.Count()-1; i++)
+                //            {
+                //                grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfFourthPath = true;
+                //              //  updateBitmap();
+                //            }                        
+                //        break;
+                //    case 4:
+                //        for (int i = 1; i < maxFitList[ct].path.Count() - 1; i++)
+                //        {
+                //            grid[maxFitList[ct].path[i][0], maxFitList[ct].path[i][1]].partOfFifthPath = true;
+                //         //   updateBitmap();
+                //        }
+                //        break;
+                //    default:
+                //        break;
+                //}
+                int m = 0;
                 foreach (var item in maxFitList)
                 {
-                    Console.WriteLine(item.path.Count());
+                    Console.WriteLine($"Gen {m}: Path Length: {item.pathLength}, Distance to End: {item.distanceToEnd}, Walls Hit: {item.wallsHit}");
+                    m++;
                 }
+
+            }
+            for (int i = 1; i < maxFitList.Last().path.Count() - 1; i++)
+            {
+                grid[maxFitList.Last().path[i][0], maxFitList.Last().path[i][1]].partOfFifthPath = true;
+                //   updateBitmap();
             }
             updateBitmap();
         }
@@ -894,8 +897,8 @@ namespace mazeGenerator
             double pathLength = 0;
 
             double pathWeight = 1;
-            double wallHitWeight = 10;
-            double distanceToEndWeight = 1;
+            double wallHitWeight = 500;
+            double distanceToEndWeight = 5;
 
 
             // calc walls hit
